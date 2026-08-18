@@ -43,6 +43,7 @@ Query filtering (Books' search/status filters) uses the Specification pattern vi
 **Category hierarchy note:** the self-reference uses `DeleteBehavior.Restrict` (SQL Server rejects a cascading self-reference). Reassigning a category's parent is checked against creating a cycle before saving — `UpdateCategoryCommandHandler` walks the proposed parent's ancestor chain and rejects the change if it would loop back to the category being edited.
 
 ERD: `docs/erd.png`.
+SQL scripts: `docs/schema.sql` (generated migration script, full table structure) and `docs/seed-data.sql` (sample data).
 
 ## Role-Based Access Control
 
