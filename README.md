@@ -24,7 +24,7 @@ Infrastructure  → EF Core, Identity, JWT, the audit interceptor
 API             → Controllers, Program.cs, Swagger, middleware
 ```
 
-Application never references Infrastructure directly — it depends on interfaces (`IApplicationDbContext`, `ICurrentUserService`, `IJwtTokenService`) that Infrastructure implements. Controllers are thin: they translate an HTTP request into a MediatR call and map the result to a status code. No business logic lives in a controller.
+Application never references Infrastructure directly — it depends on interfaces (`IApplicationDbContext`, `ICurrentUserService`, `IJwtTokenService`) that Infrastructure implements. This is what makes it possible to swap the database provider or the auth mechanism without touching a single command or query handler, and what makes handlers testable in isolation. Controllers are thin: they translate an HTTP request into a MediatR call and map the result to a status code. No business logic lives in a controller.
 
 Every feature (Books, Authors, Publishers, Categories, Members, System Users, Borrowing) follows the same Command/Query/Handler/Validator shape, organized as vertical feature folders under `Application/Features/`.
 
@@ -42,8 +42,8 @@ Query filtering (Books' search/status filters) uses the Specification pattern vi
 
 **Category hierarchy note:** the self-reference uses `DeleteBehavior.Restrict` (SQL Server rejects a cascading self-reference). Reassigning a category's parent is checked against creating a cycle before saving — `UpdateCategoryCommandHandler` walks the proposed parent's ancestor chain and rejects the change if it would loop back to the category being edited.
 
-ERD: `docs/erd.png`.
-SQL scripts: `docs/schema.sql` (generated migration script, full table structure) and `docs/seed-data.sql` (sample data).
+- ERD: [`docs/erd.png`](docs/erd.png)
+- SQL scripts: [`docs/schema.sql`](docs/schema.sql) (generated migration script, full table structure) and [`docs/seed-data.sql`](docs/seed-data.sql) (sample data)
 
 ## Role-Based Access Control
 
@@ -63,6 +63,7 @@ System Users are deactivated, not hard-deleted, via `DELETE /api/systemusers/{id
 ## Security & Activity Logging
 
 - Passwords are hashed via ASP.NET Core Identity's `PasswordHasher` (PBKDF2 + per-user salt) — never handled or stored directly.
+- JWT was chosen over cookie-based auth since this is a stateless REST API with no server-side session — a token any client (Swagger, Postman, a future SPA) can carry and present per-request fits that shape better than session state tied to the server.
 - JWTs carry the user's Id, name, and role claim, expiring after 60 minutes.
 - The JWT signing key is not committed — see Setup below.
 - An EF Core `SaveChangesInterceptor` automatically writes every Added/Modified/Deleted entity to `ActivityLogs`, excluding Identity's internal tables and the log table itself. It also stamps `CreatedAt`/`UpdatedAt` automatically.
@@ -73,7 +74,7 @@ System Users are deactivated, not hard-deleted, via `DELETE /api/systemusers/{id
 |---|---|
 | Search books by Name, Author, or Category | `GET /api/books?searchTerm=&categoryId=` |
 | Get books by status | `GET /api/books?status=Available` |
-| Postman collection | `docs/LibraryManagementSystem.postman_collection.json` |
+| Postman collection | [`docs/LibraryManagementSystem.postman_collection.json`](docs/LibraryManagementSystem.postman_collection.json) |
 
 ## API Overview
 
@@ -89,7 +90,7 @@ All endpoints except `/api/auth/login` require a Bearer token.
 - `POST /api/borrowing/borrow`, `POST /api/borrowing/{transactionId}/return`, `GET /api/borrowing/history`
 - `GET /api/activitylogs` (Administrator, Librarian only)
 
-Full interactive docs at `/swagger`.
+Full interactive docs at `/swagger`. A ready-to-run Postman collection is linked above, with an auto-login script so you don't have to paste a token into every request.
 
 ## Getting Started
 
